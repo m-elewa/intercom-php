@@ -2,10 +2,6 @@
 
 namespace Intercom;
 
-use Http\Client\Common\Plugin\ErrorPlugin;
-use Http\Client\Common\PluginClient;
-use Http\Client\HttpClient;
-use Http\Discovery\HttpClientDiscovery;
 use Http\Discovery\MessageFactoryDiscovery;
 use Http\Discovery\UriFactoryDiscovery;
 use Http\Message\Authentication;
@@ -18,13 +14,14 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\UriInterface;
 use stdClass;
+use GuzzleHttp\Client;
 
 class IntercomClient
 {
     const SDK_VERSION = '4.4.0';
 
     /**
-     * @var HttpClient $httpClient
+     * @var Client $httpClient
      */
     private $httpClient;
 
@@ -140,7 +137,7 @@ class IntercomClient
      * @param string|null $password Api Key.
      * @param array $extraRequestHeaders Extra request headers to be sent in every api request
      */
-    public function __construct(string $appIdOrToken, string $password = null, array $extraRequestHeaders = [])
+    public function __construct(string $appIdOrToken,Client $http, string $password = null, array $extraRequestHeaders = [])
     {
         $this->users = new IntercomUsers($this);
         $this->contacts = new IntercomContacts($this);
@@ -162,19 +159,9 @@ class IntercomClient
         $this->passwordPart = $password;
         $this->extraRequestHeaders = $extraRequestHeaders;
 
-        $this->httpClient = $this->getDefaultHttpClient();
+        $this->httpClient = $http;
         $this->requestFactory = MessageFactoryDiscovery::find();
         $this->uriFactory = UriFactoryDiscovery::find();
-    }
-
-    /**
-     * Sets the HTTP client.
-     *
-     * @param HttpClient $httpClient
-     */
-    public function setHttpClient(HttpClient $httpClient)
-    {
-        $this->httpClient = $httpClient;
     }
 
     /**
@@ -307,17 +294,6 @@ class IntercomClient
     public function getRateLimitDetails()
     {
         return $this->rateLimitDetails;
-    }
-
-    /**
-     * @return HttpClient
-     */
-    private function getDefaultHttpClient()
-    {
-        return new PluginClient(
-            HttpClientDiscovery::find(),
-            [new ErrorPlugin()]
-        );
     }
 
     /**
